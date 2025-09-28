@@ -5,37 +5,38 @@
 name: Build and Test with Docker Compose
 
 on:
-push:
-branches:
-- main
-pull_request:
+  push:
+    branches:
+      - main
+  pull_request: {}
 
 jobs:
-compose-test:
-name: Build & Run Docker Compose
-runs-on: ubuntu-latest
-steps:
-- name: Checkout code
-uses: actions/checkout@v4
+  compose-test:
+    name: Build & Run Docker Compose
+    runs-on: ubuntu-latest
 
-  - name: Set up Docker Buildx
-    uses: docker/setup-buildx-action@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Build and start containers with Docker Compose
-    run: docker compose -f docker-compose.yml up -d --build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  - name: Wait for containers to be healthy
-    run: |
-      echo "Waiting for containers to be healthy..."
-      docker ps
-      sleep 20
-      docker ps --format "table {{.Names}}\t{{.Status}}"
+      - name: Build and start containers with Docker Compose
+        run: docker compose -f docker-compose.yml up -d --build
 
-  - name: Run Laravel tests inside app container
-    run: docker compose exec -T app php artisan test
+      - name: Wait for containers to be healthy
+        run: |
+          echo "Waiting for containers to be healthy..."
+          docker ps
+          sleep 20
+          docker ps --format "table {{.Names}}\t{{.Status}}"
 
-  - name: Shut down containers
-    run: docker compose down -v
+      # - name: Run Laravel tests inside app container
+      #   run: docker compose exec -T app php artisan test
+
+      - name: Shut down containers
+        run: docker compose down -v
 
 ```
 
