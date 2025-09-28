@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="Laravel Custom Rules">
+    <description>Custom PHPCS rules for Laravel 12</description>
+
+    <file>app</file>
+    <file>routes</file>
+    <file>database</file>
+
+    <!-- Base standard -->
+    <rule ref="PSR12" />
+
+    <!-- Example Slevomat rule -->
+    <rule ref="SlevomatCodingStandard.Formatting.MultiLineAssignment" />
+</ruleset>
