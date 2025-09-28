@@ -34,7 +34,7 @@ class UserRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($userId),
+                Rule::unique('saas_users', 'email')->ignore($userId),
             ],
             'phone'    => ['required', 'int'],
             'address'  => ['required', 'string', 'max:500'],
