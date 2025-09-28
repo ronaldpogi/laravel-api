@@ -3,13 +3,14 @@ name: Build and Test with Docker Compose
 on:
 push:
 branches:
-- main
+  - main
 pull_request: {}
 
 jobs:
-compose-test:
-name: Build & Run Docker Compose
-runs-on: ubuntu-latest
+  compose-test:
+  name: Build & Run Docker Compose
+  runs-on: ubuntu-latest
+
 steps:
   - name: Checkout code
     uses: actions/checkout@v4
