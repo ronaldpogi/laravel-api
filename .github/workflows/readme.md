@@ -46,7 +46,7 @@ jobs:
 
 ```yml
 
-name: Build and Deploy to AWS EC2
+name: 🚀 Build & Deploy Laravel API to AWS EC2
 
 on:
   push:
@@ -63,22 +63,22 @@ env:
 
 jobs:
   build:
-    name: Build & Push Docker Image
+    name: 🛠️ Build & Push Docker Image
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: 🔧 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to DockerHub
+      - name: 🔑 Log in to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build and push image to DockerHub
+      - name: 📦 Build & Push Image to DockerHub
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -87,30 +87,54 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:latest
 
   deploy:
-    name: Deploy to AWS EC2
+    name: 🚀 Deploy to AWS EC2
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Save private key
+      - name: 🔑 Save SSH Private Key
         run: |
           echo "${{ env.AWS_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: Sync project files to EC2
+      - name: 📂 Sync Project Files to EC2
         run: |
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i key.pem" ./ ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}/app
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i key.pem" \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.github' \
+            ./ ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}/app
 
-      - name: Deploy with Docker Compose on EC2
+      - name: 🐳 Deploy with Docker Compose on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'EOF'
             cd ~/app
-            sudo docker login -u ${{ env.DOCKERHUB_USERNAME }} -p ${{ env.DOCKERHUB_TOKEN }}
-            sudo docker compose down
+            
+            # Export DockerHub credentials
+            export DOCKERHUB_USERNAME="${{ env.DOCKERHUB_USERNAME }}"
+            export DOCKERHUB_TOKEN="${{ env.DOCKERHUB_TOKEN }}"
+            
+            # Login to DockerHub
+            echo "$DOCKERHUB_TOKEN" | sudo docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            
+            # Stop existing containers (ignore errors if none)
+            sudo docker compose down || true
+            
+            # Pull the latest image(s)
             sudo docker compose pull
-            sudo docker compose up -d --build
+            
+            # Start containers in detached mode
+            sudo docker compose up -d
+            
+            # Remove unused images to save space
+            sudo docker image prune -f
           EOF
+
+      - name: 🧹 Cleanup SSH Key
+        if: always()
+        run: rm -f key.pem
+
           
 ```
