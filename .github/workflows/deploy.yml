@@ -38,9 +38,13 @@ jobs:
 
       - name: SSH into EC2 and deploy
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << EOF
+            # Export env variables inside remote session
+            export DOCKERHUB_USERNAME="${{ env.DOCKERHUB_USERNAME }}"
+            export DOCKERHUB_TOKEN="${{ env.DOCKERHUB_TOKEN }}"
+
             # Login to DockerHub inside EC2
-            echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+            echo "\$DOCKERHUB_TOKEN" | sudo docker login -u "\$DOCKERHUB_USERNAME" --password-stdin
 
             # Ensure deployment directory exists
             mkdir -p ~/laravel-api
