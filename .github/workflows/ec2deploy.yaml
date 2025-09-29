@@ -72,7 +72,7 @@ jobs:
             echo "$DOCKERHUB_TOKEN" | sudo docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             
             # Stop existing containers (ignore errors if none)
-            sudo docker compose down || true
+            sudo docker compose down -v || true
             
             # Pull the latest image(s)
             sudo docker compose pull

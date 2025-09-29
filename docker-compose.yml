@@ -34,30 +34,29 @@ services:
       - ./nginx.conf:/etc/nginx/templates/default.conf.template
       - storage:/usr/share/nginx/html/storage:rw
       - public:/usr/share/nginx/html/public:ro
+
   db:
-    image: bitnami/postgresql:16.3.0
+    image: postgres:16.3
     platform: linux/amd64
     ports:
-      - 5432:5432
+      - "5432:5432"
     restart: always
     volumes:
-      - db-data:/bitnami/postgresql
+      - db-data:/var/lib/postgresql/data
     environment:
-      - POSTGRESQL_DATABASE=${POSTGRESQL_DATABASE}
-      - POSTGRESQL_USERNAME=${POSTGRESQL_USERNAME}
-      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD}
+      - POSTGRES_DB=${POSTGRESQL_DATABASE}
+      - POSTGRES_USER=${POSTGRESQL_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD}
+
   redis:
-    image: bitnami/redis:7.2
+    image: redis:7.2
     platform: linux/amd64
     ports:
-      - 6379:6379
+      - "6379:6379"
     restart: always
     volumes:
-      - redis-data:/bitnami/redis/data
-    environment:
-      - ALLOW_EMPTY_PASSWORD=no
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - redis-data:/data   # official path
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
 
 volumes:
   storage:
