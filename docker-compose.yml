@@ -1,9 +1,6 @@
 services:
   app:
-    build:
-      context: ./backend
-      image: johnbibs/laravel-api:latest
-      dockerfile: Dockerfile
+    image: johnbibs/laravel-api:latest
     restart: unless-stopped
     ports:
       - 9000:9000
@@ -15,9 +12,7 @@ services:
       - storage:/usr/share/nginx/html/storage:rw
       - public:/usr/share/nginx/html/public:rw
   queue-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: johnbibs/laravel-api:latest
     restart: unless-stopped
     command: php artisan queue:work
     environment:
