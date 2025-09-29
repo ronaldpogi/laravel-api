@@ -30,6 +30,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.AWS_PRIVATE_KEY }}
           script: |
+            mkdir -p ~/laravel-api
             cd ~/laravel-api
             sudo docker compose down -v || true
             sudo docker compose pull
