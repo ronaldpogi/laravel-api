@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Saas;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Saas\LoginRequest;
 use App\Http\Requests\Saas\RegisterRequest;
+use App\Http\Resources\Saas\TenantResource;
 use App\Http\Resources\Saas\UserResource;
+use App\Models\Saas\User;
 use App\Services\Saas\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Controller;
-use App\Http\Resources\Saas\TenantResource;
-use App\Models\Saas\User;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller

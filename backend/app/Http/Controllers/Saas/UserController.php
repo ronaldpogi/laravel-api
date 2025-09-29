@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Saas;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Saas\UserRequest;
 use App\Http\Resources\Saas\UserResource;
 use App\Repositories\Saas\UserRepository;
 use App\Services\Saas\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
 class UserController extends Controller
 {

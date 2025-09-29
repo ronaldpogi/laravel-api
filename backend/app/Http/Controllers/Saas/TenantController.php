@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Saas;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Saas\TenantRequest;
 use App\Http\Resources\Saas\TenantResource;
 use App\Repositories\Saas\TenantRepository;
 use App\Services\Saas\TenantService;
 use Illuminate\Http\JsonResponse;
-use App\Http\Controllers\Controller;
 
 class TenantController extends Controller
 {
