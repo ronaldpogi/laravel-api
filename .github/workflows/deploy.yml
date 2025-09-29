@@ -8,6 +8,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
+      EC2_HOST: ${{ secrets.EC2_HOST }} # Your EC2 instance IP/hostname
+      EC2_USER: ubuntu                  # Default EC2 user (adjust if different)
+      IMAGE_NAME: johnbibs/laravel-api
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,24 +23,24 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/laravel-api:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/laravel-api:latest
+          docker build -t ${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ env.IMAGE_NAME }}:latest
 
       - name: Setup SSH key
         run: |
-          echo "${{ secrets.AWS_PRIVATE_KEY }}" > key.pem
+          echo "${{ env.AWS_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
 
       - name: SSH into EC2 and deploy
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Login to DockerHub
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'EOF'
+            # Login to DockerHub inside EC2
+            echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
             # Ensure deployment directory exists
             mkdir -p ~/laravel-api
@@ -46,4 +54,3 @@ jobs:
             # Run migrations + seeders
             sudo docker compose exec app php artisan migrate --seed --force
           EOF
-
