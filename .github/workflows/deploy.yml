@@ -23,16 +23,26 @@ jobs:
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/laravel-api:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/laravel-api:latest
 
-      - name: SSH into server and deploy
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.AWS_PRIVATE_KEY }}
-          script: |
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.AWS_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: SSH into EC2 and deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # Login to DockerHub
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # Ensure deployment directory exists
             mkdir -p ~/laravel-api
             cd ~/laravel-api
+
+            # Refresh containers
             sudo docker compose down -v || true
             sudo docker compose pull
             sudo docker compose up -d --build
+
+            # Run migrations + seeders
             sudo docker compose exec app php artisan migrate --seed --force
+          EOF
