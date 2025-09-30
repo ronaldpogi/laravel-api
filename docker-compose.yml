@@ -22,9 +22,15 @@ services:
     env_file:
       - .env
     environment:
-      IS_WORKER: "true"
+        IS_WORKER: "true"
     depends_on:
       - db
+    command: >
+      sh -c "until nc -z db 3306;
+        do echo '⏳ waiting for db...';
+        sleep 2;
+        done &&
+        php artisan queue:work --tries=3 --verbose --timeout=90 --sleep=3"
     volumes:
       - storage:/usr/share/nginx/html/storage
       - public:/usr/share/nginx/html/public

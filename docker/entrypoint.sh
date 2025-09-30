@@ -15,9 +15,8 @@ chmod -R 775 /usr/share/nginx/html/storage /usr/share/nginx/html/bootstrap/cache
 
 # Wait for DB
 echo "Waiting for database at ${DB_HOST:-db}:${DB_PORT:-3306}..."
-until php -r "
-\$link = @mysqli_connect(getenv('DB_HOST') ?: 'db', getenv('DB_USERNAME') ?: 'root', getenv('DB_PASSWORD') ?: '', getenv('DB_DATABASE') ?: '');
-if (\$link) { exit(0);} else { exit(1);}"; do
+until nc -z "$DB_HOST" 3306; do
+  echo "⏳ Waiting for DB at $DB_HOST:3306..."
   sleep 2
 done
 echo 'DB ready.'
