@@ -16,7 +16,8 @@ RUN apk add --no-cache bash fcgi nginx-mod-http-headers-more curl\
 
 # PHP extensions
 RUN docker-php-ext-install pdo_mysql bcmath intl zip pcntl \
-    && docker-php-ext-enable opcache
+    && docker-php-ext-enable opcache \
+    && docker-php-ext-install mysqli
 
 # OPcache for performance
 COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
