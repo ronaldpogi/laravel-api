@@ -1,29 +1,45 @@
-# Use official PHP image with necessary extensions
-FROM php:8.3-fpm
+# ---------- Build stage: install PHP deps ----------
+FROM composer:2.7 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+COPY . .
+RUN composer dump-autoload --optimize
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libjpeg-dev libfreetype6-dev libzip-dev unzip \
-    && docker-php-ext-install pdo_mysql gd zip
+# ---------- Runtime stage ----------
+FROM php:8.3-fpm-alpine
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# System deps
+RUN apk add --no-cache bash fcgi nginx-mod-http-headers-more curl\
+    icu-dev libzip-dev oniguruma-dev libpng-dev git libxml2-dev
 
-# Set working directory
+# PHP extensions
+RUN docker-php-ext-install pdo_mysql bcmath intl zip pcntl \
+    && docker-php-ext-enable opcache
+
+# OPcache for performance
+COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# Set workdir
 WORKDIR /usr/share/nginx/html
 
-# Copy project files
-COPY . .
+# Copy app from build stage
+COPY --from=vendor /app ./
 
-# Set permissions for Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache \
+# Ensure storage/bootstrap exist with correct perms
+RUN mkdir -p storage/framework/{cache,views,sessions} \
+    && mkdir -p bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Optimize Laravel
-RUN composer install --no-dev --optimize-autoloader \
-    && php artisan config:clear \
-    && php artisan route:clear \
-    && php artisan view:clear
+# App entrypoint to:
+# - wait for DB
+# - run migrations + seeders (once, idempotent)
+# - cache config/routes/views
+# - start php-fpm
+COPY ./docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Default command
-CMD ["php-fpm"]
+EXPOSE 9000
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["php-fpm", "-F", "-R"]

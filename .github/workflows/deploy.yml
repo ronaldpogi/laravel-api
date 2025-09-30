@@ -1,58 +1,70 @@
-name: Deploy Laravel API
+name: 🚀 Build & Deploy Laravel API to EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}          # e.g. johnbibs/laravel-api
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_USER: ${{ secrets.SERVER_USER }}              # e.g. ubuntu
+  AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
 
 jobs:
-  deploy:
+  build:
+    name: 🛠️ Build & Push
     runs-on: ubuntu-latest
-
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
-      EC2_HOST: ${{ secrets.EC2_HOST }} # Your EC2 instance IP/hostname
-      EC2_USER: ubuntu                  # Default EC2 user (adjust if different)
-      IMAGE_NAME: johnbibs/laravel-api
-
     steps:
-      - name: Checkout code
+      - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+      - name: 🔐 Docker login
+        run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
-      - name: Build and push Docker image
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }}:latest .
-          docker push ${{ env.IMAGE_NAME }}:latest
+      - name: 🧱 Build image
+        run: docker build -t $IMAGE_NAME:latest .
 
-      - name: Setup SSH key
+      - name: 🏷️ Push image
+        run: docker push $IMAGE_NAME:latest
+
+  deploy:
+    name: 🚢 Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout (for files to upload)
+        uses: actions/checkout@v4
+
+      - name: ✍️ Write SSH key
         run: |
-          echo "${{ env.AWS_PRIVATE_KEY }}" > key.pem
+          echo "${AWS_PRIVATE_KEY}" > key.pem
           chmod 600 key.pem
 
-      - name: 🐳 Deploy Docker Container on EC2
+      - name: 📤 Upload compose & nginx
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.AWS_PRIVATE_KEY }}
+          source: "docker-compose.yml,nginx.conf,.env"
+          target: "~"  # uploads to home directory
+
+      - name: 🚀 Restart stack (fresh)
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << EOF
-            # Login to DockerHub
+          ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST << 'EOF'
+            set -e
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-            # Pull the latest image
-            sudo docker pull ${{ env.IMAGE_NAME }}:latest
+            # Stop and nuke EVERYTHING (as requested)
+            sudo docker compose down -v || true
+            sudo docker system prune -af --volumes || true
 
-            # Stop and remove old container if exists
-            sudo docker stop vue-app || true
-            sudo docker rm vue-app || true
+            # Pull and boot
+            sudo docker compose pull
+            sudo docker compose up -d
 
-            # Run new container with restart policy
-            sudo docker run -d --name vue-app --restart unless-stopped -p 80:80 ${{ env.IMAGE_NAME }}:latest
-
-            # Clean up unused images
-            sudo docker image prune -f
+            # (Optional) show logs for quick sanity
+            sudo docker ps
           EOF
-
