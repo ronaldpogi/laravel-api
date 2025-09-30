@@ -37,7 +37,7 @@ return [
 
     'guards' => [
         'saas' => [
-            'driver' => 'sanctum',
+            'driver'   => 'sanctum',
             'provider' => 'saas_users',
         ],
     ],
@@ -62,7 +62,7 @@ return [
     'providers' => [
         'saas_users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Saas\User::class,
+            'model'  => App\Models\Saas\User::class,
         ],
 
         // 'users' => [

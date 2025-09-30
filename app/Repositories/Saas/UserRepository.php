@@ -16,4 +16,19 @@ class UserRepository extends TModel
     {
         return $this->model->where('email', $email)->first();
     }
+
+    public function attachRoles(User $user, array $roleIds): void
+    {
+        $user->roles()->attach($roleIds);
+    }
+
+    public function detachRoles(User $user, array $roleIds): void
+    {
+        $user->roles()->detach($roleIds);
+    }
+
+    public function syncRoles(User $user, array $roleIds, bool $detaching = true): void
+    {
+        $user->roles()->sync($roleIds, $detaching);
+    }
 }

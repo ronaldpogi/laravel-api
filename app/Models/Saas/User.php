@@ -12,7 +12,7 @@ use Sprout\Database\Eloquent\Concerns\BelongsToTenant;
 
 class User extends Authenticatable
 {
-    use BelongsToTenant, HasApiTokens, Notifiable, SoftDeletes, HasFactory;
+    use BelongsToTenant, HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'saas_users';
 
@@ -76,6 +76,6 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        return $this->permissions()->contains($permission);
+        return $this->permissions()->where('name', $permission)->exists();
     }
 }

@@ -59,6 +59,6 @@ class UserController extends Controller
     {
         $this->repository->delete($id);
 
-        return response()->success([], __('messages.deleted', ['resource' => $this->name]), 204);
+        return response()->success([], __('messages.deleted', ['resource' => $this->name]));
     }
 }

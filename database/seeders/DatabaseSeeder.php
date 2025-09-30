@@ -2,8 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Saas\User as SaasUser;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\Saas\SaasSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,11 +12,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        // SaasUser::factory()->create([
-        //     'name'  => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        $this->call([
+            SaasSeeder::class,
+        ]);
     }
 }
