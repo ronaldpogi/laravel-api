@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}          # e.g. johnbibs/laravel-api
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -16,14 +16,13 @@ jobs:
     name: 🛠️ Build & Push
     runs-on: ubuntu-latest
     steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: 🔐 Docker login
         run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
       - name: 🧱 Build image
-        run: docker build -t $IMAGE_NAME:latest .
+        run: docker build --no-cache -t $IMAGE_NAME:latest .
 
       - name: 🏷️ Push image
         run: docker push $IMAGE_NAME:latest
@@ -33,8 +32,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: ⬇️ Checkout (for files to upload)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: ✍️ Write SSH key
         run: |
@@ -45,52 +43,33 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.EC2_HOST }}
-          username: ubuntu   # ✅ STATIC
+          username: ubuntu
           key: ${{ env.AWS_PRIVATE_KEY }}
           source: "docker-compose.yml,nginx.conf,.env"
           target: "~"
 
-      - name: 🚀 Restart stack (fresh with auto-clean)
+      - name: 🚀 Restart stack (fresh)
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'EOF'
             set -e
 
+            echo "🔐 Logging in to DockerHub..."
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-            echo "🧹 Cleaning up unused Docker data..."
-
-            # Stop all running containers
-            sudo docker stop $(sudo docker ps -aq) || true
-
-            # Remove all containers
-            sudo docker rm -f $(sudo docker ps -aq) || true
-
-            # Remove all images
-            sudo docker rmi -f $(sudo docker images -q) || true
-
-            # (Optional) Remove all unused volumes
-            sudo docker volume prune -f
-
-            # (Optional) Remove all unused networks
-            sudo docker network prune -f
-
-            echo "🗑️ Removing conflicting volumes..."
-            sudo docker volume ls -q --filter "name=ubuntu_" | xargs -r sudo docker volume rm || true
-
-            echo "🔻 Stopping stack..."
+            echo "🧹 Cleaning Docker cache safely..."
             sudo docker compose down -v || true
+            sudo docker system prune -af --volumes || true
 
-            echo "📦 Pulling fresh images..."
-            sudo docker compose pull
+            echo "📦 Pulling latest image..."
+            sudo docker pull ${IMAGE_NAME}:latest
 
-            echo "🚢 Starting stack..."
-            sudo docker compose up -d
+            echo "🚢 Starting fresh compose..."
+            sudo docker compose up -d --pull always
 
-            echo "✅ Deployment finished!"
+            echo "✅ Active containers:"
             sudo docker ps
           EOF
 
       - name: 🧹 Cleanup SSH Key
         if: always()
         run: rm -f key.pem
-
