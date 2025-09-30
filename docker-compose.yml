@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   app:
-    image: ${IMAGE_NAME:-yourdockerhubuser/laravel-api}:latest
+    image: ${IMAGE_NAME}:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -17,7 +17,7 @@ services:
       - "9000"
 
   queue-worker:
-    image: ${IMAGE_NAME:-yourdockerhubuser/laravel-api}:latest
+    image: ${IMAGE_NAME}:latest
     restart: unless-stopped
     env_file:
       - .env
