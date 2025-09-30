@@ -15,28 +15,28 @@ services:
     networks: [appnet]
     expose:
       - "9000"
+
   queue-worker:
     image: ${IMAGE_NAME}:latest
     restart: unless-stopped
     env_file:
-        - .env
+      - .env
     environment:
-        IS_WORKER: "true"
+      IS_WORKER: "true"
     depends_on:
-        - db
+      db:
+        condition: service_healthy
     command: >
-        sh -c "
-        until mysqladmin ping -h db -u${DB_USERNAME} -p${DB_PASSWORD} --silent; do
-            echo '⏳ Waiting for DB...';
-            sleep 5;
-        done &&
+      sh -c "
+        echo '⏳ Waiting extra for DB readiness...' &&
+        sleep 15 &&
         php artisan config:clear &&
         php artisan cache:clear &&
         php artisan queue:work --tries=3 --backoff=5 --verbose --timeout=90
-        "
+      "
     volumes:
-        - storage:/usr/share/nginx/html/storage
-        - public:/usr/share/nginx/html/public
+      - storage:/usr/share/nginx/html/storage
+      - public:/usr/share/nginx/html/public
     networks: [appnet]
 
   nginx:
