@@ -19,6 +19,11 @@ if [ "${IS_WORKER}" = "true" ]; then
   php artisan config:clear || true
   php artisan config:cache || true
 
+  # Ensure cache table exists (safe to run repeatedly)
+  php artisan cache:table || true
+  php artisan migrate --force || true
+
+  echo "🚀 Launching queue worker..."
   exec php artisan queue:work --sleep=2 --tries=3 --timeout=120
 fi
 

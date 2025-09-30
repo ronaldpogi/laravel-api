@@ -26,26 +26,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: >
-      sh -c "
-        echo '🔄 Ensuring storage permissions...' &&
-        mkdir -p storage/framework/{cache,views,sessions} bootstrap/cache &&
-        chown -R www-data:www-data storage bootstrap/cache &&
-        chmod -R 775 storage bootstrap/cache &&
-        echo '🔄 Waiting for DB to be ready...' &&
-        until nc -z db 3306; do
-          echo '⏳ Still waiting for DB...'
-          sleep 2
-        done &&
-        echo '✅ DB is ready, starting worker...' &&
-        php artisan config:clear &&
-        php artisan cache:clear &&
-        php artisan queue:work --tries=3 --backoff=5 --verbose --timeout=90
-      "
+    networks: [appnet]
     volumes:
       - storage:/usr/share/nginx/html/storage
       - public:/usr/share/nginx/html/public
-    networks: [appnet]
 
   nginx:
     image: nginx:1.27-alpine
@@ -64,25 +48,19 @@ services:
     image: mysql:8.0.36
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+        MYSQL_DATABASE: ${DB_DATABASE}
+        MYSQL_USER: ${DB_USERNAME}
+        MYSQL_PASSWORD: ${DB_PASSWORD}
+        MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306"
+        - "3306:3306"
     volumes:
-      - db-data:/var/lib/mysql
-    command: [
-      "--default-authentication-plugin=mysql_native_password",
-      "--character-set-server=utf8mb4",
-      "--collation-server=utf8mb4_unicode_ci",
-      "--max_connections=300"
-    ]
+        - db-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USERNAME} -p${DB_PASSWORD} || exit 1"]
-      interval: 10s
-      retries: 10
-      timeout: 5s
+        test: ["CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USERNAME} -p${DB_PASSWORD} || exit 1"]
+        interval: 10s
+        retries: 10
+        timeout: 5s
     networks: [appnet]
 
 volumes:
