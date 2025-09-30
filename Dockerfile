@@ -28,12 +28,6 @@ WORKDIR /usr/share/nginx/html
 # Copy app from build stage
 COPY --from=vendor /app ./
 
-# Ensure storage/bootstrap exist with correct perms
-RUN mkdir -p storage/framework/{cache,views,sessions} \
-    && mkdir -p bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
-
 # App entrypoint to:
 # - wait for DB
 # - run migrations + seeders (once, idempotent)
