@@ -75,6 +75,9 @@ jobs:
             echo \"📦 Pulling fresh images...\"
             sudo docker compose pull
 
+            echo "🗑️ Removing conflicting storage volume..."
+            sudo docker volume rm ubuntu_storage || true
+
             echo \"🚢 Starting stack...\"
             sudo docker compose up -d
 
