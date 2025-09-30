@@ -22,22 +22,20 @@ jobs:
       - name: 🔐 Docker login
         run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
-      - name: 🧱 Build image (no cache)
-        run: |
-          TAG=${GITHUB_SHA::7}   # short commit hash (e.g. abc1234)
-          docker build --no-cache -t $IMAGE_NAME:latest -t $IMAGE_NAME:$TAG .
+      - name: 🧱 Build image
+        run: docker build -t $IMAGE_NAME:latest .
 
       - name: 🏷️ Push image
-        run: |
-          TAG=${GITHUB_SHA::7}
-          docker push $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:$TAG
+        run: docker push $IMAGE_NAME:latest
 
   deploy:
     name: 🚢 Deploy to EC2
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: ⬇️ Checkout (for files to upload)
+        uses: actions/checkout@v4
+
       - name: ✍️ Write SSH key
         run: |
           echo "${AWS_PRIVATE_KEY}" > key.pem
@@ -47,23 +45,34 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.EC2_HOST }}
-          username: ubuntu
+          username: ubuntu   # ✅ STATIC
           key: ${{ env.AWS_PRIVATE_KEY }}
           source: "docker-compose.yml,nginx.conf,.env"
           target: "~"
 
       - name: 🚀 Restart stack (fresh with auto-clean)
         run: |
-          TAG=${GITHUB_SHA::7}
           ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
             set -e
 
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
             echo "🧹 Cleaning up unused Docker data..."
-            sudo docker container prune -f || true
-            sudo docker image prune -af || true
-            sudo docker system prune -af --volumes || true
+
+            # Stop all running containers
+            sudo docker stop $(sudo docker ps -aq) || true
+
+            # Remove all containers
+            sudo docker rm -f $(sudo docker ps -aq) || true
+
+            # Remove all images
+            sudo docker rmi -f $(sudo docker images -q) || true
+
+            # (Optional) Remove all unused volumes
+            sudo docker volume prune -f
+
+            # (Optional) Remove all unused networks
+            sudo docker network prune -f
 
             echo "🗑️ Removing conflicting volumes..."
             sudo docker volume ls -q --filter "name=ubuntu_" | xargs -r sudo docker volume rm || true
@@ -75,7 +84,7 @@ jobs:
             sudo docker compose pull
 
             echo "🚢 Starting stack..."
-            sudo IMAGE_TAG=$TAG docker compose up -d
+            sudo docker compose up -d
 
             echo "✅ Deployment finished!"
             sudo docker ps
@@ -84,3 +93,4 @@ jobs:
       - name: 🧹 Cleanup SSH Key
         if: always()
         run: rm -f key.pem
+
