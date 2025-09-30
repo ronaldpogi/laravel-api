@@ -14,16 +14,6 @@ ensure_storage_dirs() {
 # If this container is a queue worker
 if [ "${IS_WORKER}" = "true" ]; then
   echo "🚀 Starting Laravel Queue Worker..."
-  ensure_storage_dirs
-
-  php artisan config:clear || true
-  php artisan config:cache || true
-
-  # Ensure cache table exists (safe to run repeatedly)
-  php artisan cache:table || true
-  php artisan migrate --force || true
-
-  echo "🚀 Launching queue worker..."
   exec php artisan queue:work --sleep=2 --tries=3 --timeout=120
 fi
 
