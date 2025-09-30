@@ -60,23 +60,17 @@ jobs:
             echo \"🧹 Cleaning up unused Docker data...\"
             sudo docker container prune -f || true
             sudo docker image prune -af || true
-            sudo docker volume prune -f || true
             sudo docker system prune -af --volumes || true
 
-            echo \"🧼 Cleaning apt cache...\"
-            sudo apt clean || true
-
-            echo \"🧾 Current disk usage:\"
-            df -h
+            echo \"🗑️ Removing conflicting volumes...\"
+            sudo docker volume rm ubuntu_storage || true
+            sudo docker volume rm ubuntu_public || true
 
             echo \"🔻 Stopping stack...\"
             sudo docker compose down -v || true
 
             echo \"📦 Pulling fresh images...\"
             sudo docker compose pull
-
-            echo "🗑️ Removing conflicting storage volume..."
-            sudo docker volume rm ubuntu_storage || true
 
             echo \"🚢 Starting stack...\"
             sudo docker compose up -d

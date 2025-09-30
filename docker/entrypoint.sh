@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
 set -e
 
+ensure_storage_dirs() {
+  mkdir -p storage/framework
+  mkdir -p storage/framework/cache
+  mkdir -p storage/framework/views
+  mkdir -p storage/framework/sessions
+  mkdir -p bootstrap/cache
+  chown -R www-data:www-data storage bootstrap/cache
+  chmod -R 775 storage bootstrap/cache
+}
+
 # If this container is a queue worker
 if [ "${IS_WORKER}" = "true" ]; then
   echo "🚀 Starting Laravel Queue Worker..."
-  # Ensure dirs exist even for worker
-  mkdir -p storage/framework/{cache,views,sessions} bootstrap/cache
-  chown -R www-data:www-data storage bootstrap/cache
-  chmod -R 775 storage bootstrap/cache
+  ensure_storage_dirs
 
   php artisan config:clear || true
   php artisan config:cache || true
+
   exec php artisan queue:work --sleep=2 --tries=3 --timeout=120
 fi
 
 echo "🔧 Bootstrapping Laravel app container..."
-
-# Ensure storage + cache dirs exist (idempotent)
-mkdir -p storage/framework/{cache,views,sessions} bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+ensure_storage_dirs
 
 # Wait for DB to be ready
 DB_HOST="${DB_HOST:-db}"
