@@ -1,67 +1,76 @@
 #!/usr/bin/env bash
 set -e
 
-# Always ensure storage and cache directories exist with correct permissions
+# ==============================
+# 🔧 Storage Directory Setup
+# ==============================
 ensure_storage_dirs() {
-  echo "📁 Ensuring storage and cache directories exist..."
-  mkdir -p storage/framework/cache
-  mkdir -p storage/framework/views
-  mkdir -p storage/framework/sessions
-  mkdir -p bootstrap/cache
+  echo "📁 Ensuring storage and cache directories exist safely..."
 
-  chown -R www-data:www-data storage bootstrap/cache
-  chmod -R 775 storage bootstrap/cache
+  # Use || true in case volume already contains these folders/files
+  mkdir -p storage/framework/cache     || true
+  mkdir -p storage/framework/views     || true
+  mkdir -p storage/framework/sessions  || true
+  mkdir -p bootstrap/cache             || true
+
+  # Fix permissions
+  chown -R www-data:www-data storage bootstrap/cache || true
+  chmod -R 775 storage bootstrap/cache || true
 }
 
 ensure_storage_dirs
 
-# If this container is a queue worker
-if [ "${IS_WORKER}" = "true" ]; then
-  echo "🚀 Starting Laravel Queue Worker..."
-
-  # ✅ Wait for DB before starting queue worker
+# ==============================
+# ⏳ Wait for Database
+# ==============================
+wait_for_db() {
   DB_HOST="${DB_HOST:-db}"
   DB_PORT="${DB_PORT:-3306}"
+
   echo "⏳ Waiting for database at ${DB_HOST}:${DB_PORT}..."
   until nc -z "${DB_HOST}" "${DB_PORT}"; do
     echo "   Still waiting for DB..."
     sleep 2
   done
   echo "✅ Database is ready."
+}
 
-  # ✅ Only run the worker — no caches, no migrations
+# ==============================
+# 🧵 Queue Worker Logic
+# ==============================
+if [ "${IS_WORKER}" = "true" ]; then
+  echo "🚀 Starting Laravel Queue Worker..."
+  wait_for_db
   exec php artisan queue:work --sleep=2 --tries=3 --timeout=120
 fi
 
-# --- If NOT a worker, continue bootstrapping PHP-FPM app container ---
-
+# ==============================
+# 🚀 Main App Container Logic
+# ==============================
 echo "🔧 Bootstrapping Laravel app container..."
+wait_for_db
 
-# Wait for DB to be ready
-DB_HOST="${DB_HOST:-db}"
-DB_PORT="${DB_PORT:-3306}"
-echo "⏳ Waiting for database at ${DB_HOST}:${DB_PORT}..."
-until nc -z "${DB_HOST}" "${DB_PORT}"; do
-  echo "   Still waiting for DB..."
-  sleep 2
-done
-echo "✅ Database is ready."
-
-# Run migrations + seeders only on main app container
+# Safely attempt migrations only if table exists and not locked
 echo "📦 Running migrations..."
 php artisan migrate --force || true
 
 echo "🌱 Running seeders..."
 php artisan db:seed --force || true
 
-# Optimize caches
+# ==============================
+# ⚡ Cache Optimization
+# ==============================
+echo "🧹 Cleaning old caches..."
+php artisan optimize:clear || true
+
 echo "⚡ Optimizing Laravel caches..."
 php artisan event:cache || true
 php artisan route:cache || true
 php artisan config:cache || true
 php artisan view:cache || true
-php artisan optimize || true
 
-# Hand off to php-fpm (CMD)
+# ==============================
+# ✅ Start PHP-FPM
+# ==============================
 echo "🚀 Starting PHP-FPM..."
 exec "$@"
