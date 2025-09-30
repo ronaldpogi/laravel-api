@@ -16,7 +16,8 @@ jobs:
     name: 🛠️ Build & Push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
 
       - name: 🔐 Docker login
         run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
@@ -32,7 +33,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇️ Checkout (for files to upload)
+        uses: actions/checkout@v4
 
       - name: ✍️ Write SSH key
         run: |
@@ -43,14 +45,14 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.EC2_HOST }}
-          username: ubuntu
+          username: ubuntu   # ✅ STATIC
           key: ${{ env.AWS_PRIVATE_KEY }}
           source: "docker-compose.yml,nginx.conf,.env"
           target: "~"
 
-      - name: 🚀 Restart stack (fresh)
+      - name: 🚀 Restart stack (fresh with auto-clean)
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
             set -e
 
             echo "🔐 Logging in to DockerHub..."
