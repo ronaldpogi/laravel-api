@@ -63,8 +63,7 @@ jobs:
             sudo docker system prune -af --volumes || true
 
             echo "🗑️ Removing conflicting volumes..."
-            sudo docker volume rm ubuntu_storage || true
-            sudo docker volume rm ubuntu_public || true
+            sudo docker volume ls -q --filter "name=ubuntu_" | xargs -r sudo docker volume rm || true
 
             echo "🔻 Stopping stack..."
             sudo docker compose down -v || true
