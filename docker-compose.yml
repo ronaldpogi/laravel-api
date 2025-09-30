@@ -20,20 +20,19 @@ services:
     image: ${IMAGE_NAME}:latest
     restart: unless-stopped
     env_file:
-      - .env
+        - .env
     environment:
         IS_WORKER: "true"
     depends_on:
-      - db
+        db:
+        condition: service_healthy
     command: >
-      sh -c "until nc -z db 3306;
-        do echo '⏳ waiting for db...';
-        sleep 2;
-        done &&
-        php artisan queue:work --tries=3 --verbose --timeout=90 --sleep=3"
+        sh -c "php artisan config:clear &&
+            php artisan cache:clear &&
+            php artisan queue:work --tries=3 --backoff=5 --verbose --timeout=90"
     volumes:
-      - storage:/usr/share/nginx/html/storage
-      - public:/usr/share/nginx/html/public
+        - storage:/usr/share/nginx/html/storage
+        - public:/usr/share/nginx/html/public
     networks: [appnet]
 
   nginx:
@@ -67,6 +66,11 @@ services:
       "--collation-server=utf8mb4_unicode_ci",
       "--max_connections=300"
     ]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u${DB_USERNAME} -p${DB_PASSWORD} || exit 1"]
+      interval: 10s
+      retries: 10
+      timeout: 5s
     networks: [appnet]
 
 volumes:
