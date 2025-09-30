@@ -52,7 +52,7 @@ jobs:
 
       - name: 🚀 Restart stack (fresh with auto-clean)
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST "bash --noprofile --norc -c '
             set -e
             echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
