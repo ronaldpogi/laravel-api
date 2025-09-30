@@ -7,9 +7,12 @@ services:
     depends_on:
       - db
     volumes:
+      # ✅ Only persist the directories that actually need to survive deployments
       - storage-logs:/usr/share/nginx/html/storage/logs
-      - storage-framework:/usr/share/nginx/html/storage/framework
-      - public:/usr/share/nginx/html/public
+      - storage-framework-cache:/usr/share/nginx/html/storage/framework/cache
+      - storage-framework-sessions:/usr/share/nginx/html/storage/framework/sessions
+      - storage-framework-views:/usr/share/nginx/html/storage/framework/views
+      - storage-app-public:/usr/share/nginx/html/storage/app/public
     networks: [appnet]
     expose:
       - "9000"
@@ -26,8 +29,10 @@ services:
         condition: service_healthy
     volumes:
       - storage-logs:/usr/share/nginx/html/storage/logs
-      - storage-framework:/usr/share/nginx/html/storage/framework
-      - public:/usr/share/nginx/html/public
+      - storage-framework-cache:/usr/share/nginx/html/storage/framework/cache
+      - storage-framework-sessions:/usr/share/nginx/html/storage/framework/sessions
+      - storage-framework-views:/usr/share/nginx/html/storage/framework/views
+      - storage-app-public:/usr/share/nginx/html/storage/app/public
     networks: [appnet]
 
   nginx:
@@ -39,9 +44,8 @@ services:
       - app
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - public:/usr/share/nginx/html/public:ro
+      - storage-app-public:/usr/share/nginx/html/storage/app/public:ro
       - storage-logs:/usr/share/nginx/html/storage/logs:ro
-      # Note: NGINX normally doesn't need framework/queue data
     networks: [appnet]
 
   db:
@@ -65,8 +69,10 @@ services:
 
 volumes:
   storage-logs:
-  storage-framework:
-  public:
+  storage-framework-cache:
+  storage-framework-sessions:
+  storage-framework-views:
+  storage-app-public:
   db-data:
 
 networks:
