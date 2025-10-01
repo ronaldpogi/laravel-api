@@ -34,6 +34,8 @@ COPY . .
 # Storage perms
 RUN mkdir -p storage/framework/{cache,views,sessions} \
  && chown -R www-data:www-data storage bootstrap/cache \
+ && chown -R www-data:www-data /usr/share/nginx/html \
+ && chmod -R 755 /usr/share/nginx/html \
  && chmod -R 775 storage bootstrap/cache
 
 # Entrypoint (make sure this file exists, is LF, and executable)

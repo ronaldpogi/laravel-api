@@ -70,6 +70,12 @@ jobs:
           echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
           cd ~
+
+          # Cleanup old containers/images/volumes/networks
+          sudo docker stop $(sudo docker ps -q) || true
+          sudo docker rm $(sudo docker ps -aq) || true
+          sudo docker system prune -af --volumes || true
+
           # Always pull the newest image
           sudo docker pull ${IMAGE_NAME}:latest
 
