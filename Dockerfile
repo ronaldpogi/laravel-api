@@ -1,41 +1,45 @@
-# ---------- Build stage: install PHP deps ----------
-FROM composer:2.7 AS vendor
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --no-scripts
-COPY . .
-RUN composer dump-autoload --optimize \
-    && php artisan package:discover --ansi || true
-
-# ---------- Runtime stage ----------
+# ---------- PHP-FPM (Alpine only) ----------
 FROM php:8.3-fpm-alpine
 
-# System deps
-RUN apk add --no-cache bash fcgi nginx-mod-http-headers-more curl\
-    icu-dev libzip-dev oniguruma-dev libpng-dev git libxml2-dev
+# System deps for pdo_pgsql (Alpine needs postgresql-dev)
+RUN apk add --no-cache \
+      postgresql-dev postgresql-client \
+      libzip-dev libpng-dev bash git
 
-# PHP extensions
-RUN docker-php-ext-install pdo_mysql bcmath intl zip pcntl \
-    && docker-php-ext-enable opcache \
-    && docker-php-ext-install mysqli
+# PHP extensions (pdo_pgsql is the key one)
+RUN set -eux; \
+    docker-php-ext-install pdo_pgsql bcmath gd zip
 
-# OPcache for performance
-COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+# Redis extension via PECL (needs phpize toolchain)
+# $PHPIZE_DEPS is provided by the official PHP images (autoconf, make, g++, etc.)
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+ && pecl install redis \
+ && docker-php-ext-enable redis \
+ && apk del .build-deps
 
-# Set workdir
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
 WORKDIR /usr/share/nginx/html
 
-# Copy app from build stage
-COPY --from=vendor /app ./
+# Composer first (better caching)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# App entrypoint to:
-# - wait for DB
-# - run migrations + seeders (once, idempotent)
-# - cache config/routes/views
-# - start php-fpm
-COPY ./docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# App source
+COPY . .
+
+# Storage perms
+RUN mkdir -p storage/framework/{cache,views,sessions} \
+ && chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
+
+# Entrypoint (make sure this file exists, is LF, and executable)
+COPY ./php-fpm-entrypoint /usr/local/bin/php-entrypoint
+RUN chmod a+x /usr/local/bin/php-entrypoint
 
 EXPOSE 9000
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["php-fpm", "-F", "-R"]
+ENTRYPOINT ["/usr/local/bin/php-entrypoint"]
+CMD ["php-fpm"]

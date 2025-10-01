@@ -1,77 +1,90 @@
-name: 🚀 Build & Deploy Laravel API to EC2
+name: 🚀 Build & Deploy Laravel Docker Stack
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
 
 env:
-  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  EC2_HOST: ${{ secrets.EC2_HOST }}
-  AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'johnbibs/laravel-api' }}
 
 jobs:
-  build:
-    name: 🛠️ Build & Push
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
 
-      - name: 🔐 Docker login
-        run: echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      - name: 🔐 Docker Hub Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: 🧱 Build image
-        run: docker build --no-cache -t $IMAGE_NAME:latest .
+      - name: 🏷️ Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
 
-      - name: 🏷️ Push image
-        run: docker push $IMAGE_NAME:latest
+      - name: 🐳 Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
-    name: 🚢 Deploy to EC2
-    needs: build
     runs-on: ubuntu-latest
+    needs: build-and-push
     steps:
-      - name: ⬇️ Checkout (for files to upload)
+      - name: ⬇️ Checkout (for compose/env files)
         uses: actions/checkout@v4
 
-      - name: ✍️ Write SSH key
-        run: |
-          echo "${AWS_PRIVATE_KEY}" > key.pem
-          chmod 600 key.pem
-
-      - name: 📤 Upload compose & nginx
-        uses: appleboy/scp-action@v0.1.7
+      - name: 🔐 Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ env.EC2_HOST }}
-          username: ubuntu   # ✅ STATIC
-          key: ${{ env.AWS_PRIVATE_KEY }}
-          source: "docker-compose.yml,nginx.conf,.env"
-          target: "~"
+          ssh-private-key: ${{ secrets.AWS_PRIVATE_KEY }}
 
-      - name: 🚀 Restart stack (fresh with auto-clean)
+      - name: 🚀 Deploy on EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER || 'ubuntu' }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
-            set -e
+          set -e
 
-            echo "🔐 Logging in to DockerHub..."
-            echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+          # Copy compose and config to server (root of your project dir)
+          rsync -avz \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            docker-compose.yml nginx.conf .env \
+            ${EC2_USER}@${EC2_HOST}:~/
 
-            echo "🧹 Cleaning Docker cache safely..."
-            sudo docker compose down -v || true
-            sudo docker system prune -af --volumes || true
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} bash -s << EOF
+          set -euo pipefail
 
-            echo "📦 Pulling latest image..."
-            sudo docker pull ${IMAGE_NAME}:latest
+          echo "${DOCKERHUB_TOKEN}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
 
-            echo "🚢 Starting fresh compose..."
-            sudo docker compose up -d --force-recreate --always-recreate-deps --renew-anon-volumes
+          cd ~
+          # Always pull the newest image
+          sudo docker pull ${IMAGE_NAME}:latest
 
-            echo "✅ Active containers:"
-            sudo docker ps
+          # Stop & remove stack (containers, networks, anonymous vols)
+          # Preserve named volumes by default
+          sudo docker compose down --remove-orphans
+
+          # Aggressive prune (images/containers/networks/build cache)
+          sudo docker system prune -af --volumes || true
+
+          # Recreate stack
+          sudo docker compose up -d
+
+          # Show status
+          sudo docker compose ps
+          sudo docker compose logs -f --tail=100 &
+          sleep 5
           EOF
-
-      - name: 🧹 Cleanup SSH Key
-        if: always()
-        run: rm -f key.pem
