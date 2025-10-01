@@ -7,7 +7,7 @@ services:
     depends_on:
       - db
     volumes:
-      # ✅ Only persist the directories that actually need to survive deployments
+      # ✅ Persist only necessary storage directories
       - storage-logs:/usr/share/nginx/html/storage/logs
       - storage-framework-cache:/usr/share/nginx/html/storage/framework/cache
       - storage-framework-sessions:/usr/share/nginx/html/storage/framework/sessions
@@ -45,12 +45,13 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
-      # ✅ Mount app container's code into Nginx
+      # ✅ Mount built Laravel code (read-only)
       - app_code:/usr/share/nginx/html:ro
 
-      # ✅ Storage-only volumes stay as is
+      # ✅ Only mount public files (accessible to web)
       - storage-app-public:/usr/share/nginx/html/storage/app/public:ro
-      - storage-logs:/usr/share/nginx/html/storage/logs:ro
+
+      # ❌ Removed storage-logs to avoid write errors (not needed by nginx)
     networks: [appnet]
 
   db:
