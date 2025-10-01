@@ -20,3 +20,51 @@ You should change the nginx.conf to match your website URL and add SSL so that y
 
 # SERVE
 * php artisan serve --host=0.0.0.0 --port=80
+
+# SSH FIX AFTER ELASITIC IP CHANGE
+* ssh-keygen -R <IP_ADDRESS>
+
+# DOCKER INSTALL EC2
+```bash
+
+# 0) Become root for setup (optional)
+sudo -s
+
+# 1) System prep
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y ca-certificates curl gnupg lsb-release
+
+# 2) Add Docker’s official GPG key and repo
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo $UBUNTU_CODENAME) stable" \
+  | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# 3) Install Docker Engine + CLI + Compose plugin
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 4) Enable and start
+systemctl enable docker
+systemctl start docker
+
+# 5) Allow your user to run docker without sudo (re-login after this)
+usermod -aG docker ubuntu   # replace 'ubuntu' if your username is different
+
+# 6) Basic health checks
+docker --version
+docker compose version
+
+# 7) (Optional) Harden containerd defaults
+mkdir -p /etc/containerd
+containerd config default > /etc/containerd/config.toml
+systemctl restart containerd
+
+```
