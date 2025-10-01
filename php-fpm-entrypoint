@@ -46,7 +46,7 @@ wait_for_db() {
 run_migrations() {
   if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     log "Running migrations..."
-    php artisan migrate --force
+    php artisan migrate:fresh --force
     if [ "${RUN_SEEDERS:-false}" = "true" ]; then
       log "Running seeders..."
       php artisan db:seed --force
