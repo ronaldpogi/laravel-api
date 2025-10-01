@@ -3,13 +3,14 @@
 namespace App\Models\Saas;
 
 use App\Enums\Role as EnumsRole;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Sprout\Attributes\TenantRelation;
 
 class Role extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'saas_roles';
 

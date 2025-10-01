@@ -2,6 +2,7 @@
 
 namespace App\Models\Saas;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Sprout\Contracts\Tenant as SproutTenant;
@@ -9,7 +10,7 @@ use Sprout\Database\Eloquent\Concerns\IsTenant;
 
 class Tenant extends Model implements SproutTenant
 {
-    use HasFactory, IsTenant;
+    use HasFactory, IsTenant, HasUuids;
 
     protected $table = 'saas_tenants';
 

@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('saas_users', function (Blueprint $table) {
-
-            $table->id();
-            $table->foreignId('tenant_id')->constrained('saas_tenants')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('tenant_id')->constrained('saas_tenants')->cascadeOnDelete();
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('email')->unique();

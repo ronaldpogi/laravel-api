@@ -2,13 +2,15 @@
 
 namespace App\Models\Saas;
 
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Sprout\Attributes\TenantRelation;
 
 class Permission extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'saas_permissions';
 
