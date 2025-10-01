@@ -2,6 +2,7 @@
 set -euo pipefail
 
 log() { echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] $*"; }
+LOCK_FILE="storage/.migrated_once"  # used to ensure migrations run only once
 
 main() {
   if [ "${IS_WORKER:-false}" = "true" ]; then
@@ -45,11 +46,17 @@ wait_for_db() {
 
 run_migrations() {
   if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-    log "Running migrations..."
-    php artisan migrate:fresh --force
-    if [ "${RUN_SEEDERS:-false}" = "true" ]; then
-      log "Running seeders..."
-      php artisan db:seed --force
+    if [ ! -f "${LOCK_FILE}" ]; then
+      log "Running migrations..."
+      php artisan migrate:fresh --force
+      if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+        log "Running seeders..."
+        php artisan db:seed --force
+      fi
+      touch "${LOCK_FILE}"
+      log "Migrations done (lock created at ${LOCK_FILE})."
+    else
+      log "Migrations already ran once (found ${LOCK_FILE}); skipping."
     fi
   fi
 }
