@@ -18,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - storage:/usr/share/nginx/html/storage:rw
+      - storage:/usr/share/nginx/html/storage
       # NOTE: do NOT mount a volume on /usr/share/nginx/html/public or you'll hide built assets
 
   queue-worker:
@@ -57,8 +57,6 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - storage:/srv/storage:ro
-      - ./:/usr/share/nginx/html:ro
-      # Public files are inside the app image; Nginx sees them via the app’s container FS
 
   db:
     image: postgres:16-alpine
