@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Support\Facades\DB;
 use App\Enums\Role as EnumsRole;
 use App\Models\Saas\Permission as SaasPermission;
 use App\Models\Saas\Role as SaasRole;
 use App\Models\Saas\Tenant;
 use App\Models\Saas\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             // Loop for 10 tenants
             for ($i = 1; $i <= 10; $i++) {
                 $tenant = Tenant::firstOrCreate(
-                    ['id' => $i],
+                    ['subdomain' => "tenant{$i}"],
                     [
                         'name'      => "Tenant {$i}",
                         'address'   => 'N/A',
