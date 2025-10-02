@@ -4,11 +4,8 @@ namespace App\Listeners\Saas;
 
 use App\Enums\Role;
 use App\Events\Saas\TenantRegistered;
-use App\Models\Saas\Tenant;
-use App\Models\Saas\User;
 use App\Repositories\Saas\PermissionRepository;
 use App\Repositories\Saas\RoleRepository;
-use App\Services\Saas\RoleService;
 use Illuminate\Support\Facades\DB;
 
 class BootstrapTenant
