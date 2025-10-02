@@ -60,4 +60,19 @@ abstract class TModel
 
         return false;
     }
+
+    public function options()
+    {
+        return $this->model->select('id', 'name')->get();
+    }
+
+    public function firstOrCreate(array $conditions)
+    {
+        return $this->model->firstOrCreate($conditions);
+    }
+
+    public function findWhere(array $conditions)
+    {
+        return $this->model->where($conditions)->first();
+    }
 }

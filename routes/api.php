@@ -1,8 +1,10 @@
 <?php
 
-use App\Http\Controllers\Saas\AccessControlController;
 use App\Http\Controllers\Saas\AuthController;
 use App\Http\Controllers\Saas\DashboardController;
+use App\Http\Controllers\Saas\OptionController;
+use App\Http\Controllers\Saas\PermissionController;
+use App\Http\Controllers\Saas\RoleController;
 use App\Http\Controllers\Saas\TenantController;
 use App\Http\Controllers\Saas\UserController;
 use Illuminate\Support\Facades\Route;
@@ -23,16 +25,21 @@ Route::prefix('saas')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::apiResource('tenants', TenantController::class);
             Route::apiResource('users', UserController::class);
-            // Access Control routes
-            Route::prefix('access-control')->controller(AccessControlController::class)->group(function () {
-                // Role <-> Permission
-                Route::post('roles/{role}/permissions/attach', 'attachPermissionsToRole');
-                Route::post('roles/{role}/permissions/detach', 'detachPermissionsFromRole');
-                Route::post('roles/{role}/permissions/sync', 'syncPermissionsForRole');
-                // User <-> Role
-                Route::post('users/{user}/roles/attach', 'attachRolesToUser');
-                Route::post('users/{user}/roles/detach', 'detachRolesFromUser');
-                Route::post('users/{user}/roles/sync', 'syncRolesForUser');
+
+            Route::prefix('roles')->controller(RoleController::class)->group(function () {
+                Route::post('users/{user}/attach', 'attachRolesToUser');
+                Route::post('users/{user}/detach', 'detachRolesFromUser');
+                Route::post('users/{user}/sync', 'syncRolesForUser');
+            });
+
+            Route::prefix('permissions')->controller(PermissionController::class)->group(function () {
+                Route::post('roles/{role}/attach', 'attachPermissionsToRole');
+                Route::post('roles/{role}/detach', 'detachPermissionsFromRole');
+                Route::post('roles/{role}/sync', 'syncPermissionsForRole');
+            });
+
+            Route::prefix('options')->controller(OptionController::class)->group(function () {
+                Route::get('/roles', 'RoleOptions');
             });
         });
     });

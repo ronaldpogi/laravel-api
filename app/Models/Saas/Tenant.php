@@ -10,7 +10,7 @@ use Sprout\Database\Eloquent\Concerns\IsTenant;
 
 class Tenant extends Model implements SproutTenant
 {
-    use HasFactory, IsTenant, HasUuids;
+    use HasFactory, HasUuids, IsTenant;
 
     protected $table = 'saas_tenants';
 

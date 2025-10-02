@@ -2,7 +2,9 @@
 
 namespace App\Services\Saas;
 
+use App\Models\Saas\User as UserModel;
 use App\Repositories\Saas\UserRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
 
 class UserService
@@ -13,7 +15,7 @@ class UserService
         protected UserRepository $userRepo,
     ) {}
 
-    public function create(array $data)
+    public function create(array $data): UserModel
     {
         $data['password'] = Hash::make($data['password']);
 
@@ -22,7 +24,7 @@ class UserService
         return $user;
     }
 
-    public function update($id, array $data)
+    public function update(string $id, array $data): Collection
     {
         if (empty($data['password'])) {
             unset($data['password']); // don't override password

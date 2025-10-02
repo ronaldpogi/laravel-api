@@ -82,18 +82,6 @@ class DatabaseSeeder extends Seeder
 
                 if ($tenantRole) {
                     $tenantPermissions = SaasPermission::where('tenant_id', $tenant->id)
-                        ->whereIn('name', [
-                            'users.store',
-                            'users.index',
-                            'users.show',
-                            'users.update',
-                            'users.destroy',
-                            'tenants.index',
-                            'tenants.store',
-                            'tenants.show',
-                            'tenants.update',
-                            'tenants.destroy',
-                        ])
                         ->pluck('id')
                         ->toArray();
 

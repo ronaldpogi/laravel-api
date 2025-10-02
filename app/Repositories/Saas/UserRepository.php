@@ -12,11 +12,6 @@ class UserRepository extends TModel
         parent::__construct($user);
     }
 
-    public function findByEmail(string $email)
-    {
-        return $this->model->where('email', $email)->first();
-    }
-
     public function attachRoles(User $user, array $roleIds): void
     {
         $user->roles()->attach($roleIds);

@@ -39,6 +39,9 @@ class UserRequest extends FormRequest
             'phone'    => ['required', 'int'],
             'address'  => ['required', 'string', 'max:500'],
             'password' => [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
+
+            'role_ids'   => ['required', 'array', 'min:1'],
+            'role_ids.*' => ['exists:saas_roles,id'],
         ];
     }
 }

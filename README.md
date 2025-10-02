@@ -68,3 +68,37 @@ containerd config default > /etc/containerd/config.toml
 systemctl restart containerd
 
 ```
+
+
+# CUSTOM ARTISAN COMMAND FOR CREATING LARAVEL RESOURCES
+
+- Run:
+```bash
+php artisan make:command MakeModuleCommand
+```
+
+- Open app/Console/Commands/MakeModuleCommand.php and place this inside handle():
+```php
+public function handle()
+{
+    $name = $this->argument('name');
+
+    $this->call('make:controller', ['name' => "{$name}Controller"]);
+    $this->call('make:request', ['name' => "{$name}Request"]);
+    $this->call('make:resource', ['name' => "{$name}Resource"]);
+    $this->call('make:service', ['name' => "{$name}Service"]);
+    $this->call('make:repository', ['name' => "{$name}Repository"]);
+
+    $this->info("Module {$name} generated!");
+}
+```
+
+- php artisan make:module User
+```bash
+php artisan make:module User
+```
+
+# MODULAR DESIHN
+- use this package 
+- composer require nwidart/laravel-modules
+- php artisan module:make User

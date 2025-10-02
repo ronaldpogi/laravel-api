@@ -56,7 +56,7 @@ class AppServiceProvider extends ServiceProvider
         Response::macro('error', function ($message = null, $status = 400, $errors = []) {
             $defaultMessage = $message ?? __('errors.bad_request');
 
-            $response = ['status' => false, 'message' => $defaultMessage, $errors];
+            $response = ['status' => false, 'message' => $defaultMessage, 'errors' => $errors];
 
             return response()->json($response, $status);
         });

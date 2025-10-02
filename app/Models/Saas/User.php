@@ -13,7 +13,7 @@ use Sprout\Database\Eloquent\Concerns\BelongsToTenant;
 
 class User extends Authenticatable
 {
-    use BelongsToTenant, HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasUuids;
+    use BelongsToTenant, HasApiTokens, HasFactory, HasUuids, Notifiable, SoftDeletes;
 
     protected $table = 'saas_users';
 

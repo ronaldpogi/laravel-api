@@ -2,8 +2,12 @@
 
 namespace App\Services\Saas;
 
+use App\Events\Saas\TenantRegistered;
+use App\Models\Saas\Tenant as TenantModel;
+use App\Repositories\Saas\RoleRepository;
 use App\Repositories\Saas\TenantRepository;
 use App\Repositories\Saas\UserRepository;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthService
@@ -12,25 +16,36 @@ class AuthService
 
     public function __construct(
         protected TenantRepository $tenantRepository,
-        protected UserRepository $userRepository
+        protected UserRepository $userRepository,
+        protected RoleService $roleService,
+        protected RoleRepository $roleRepository,
     ) {}
 
-    public function register(array $data)
+    public function register(array $data): TenantModel
     {
-        $tenant['name']      = $data['name'];
-        $tenant['address']   = $data['address'];
-        $tenant['subdomain'] = $data['subdomain'];
-        $tenant['settings']  = $data['settings'] ?? [];
+        return DB::transaction(function () use ($data) {
 
-        $tenant = $this->tenantRepository->create($tenant);
+            $tenantData = [
+                'name'      => $data['name'],
+                'address'   => $data['address'],
+                'subdomain' => $data['subdomain'],
+                'settings'  => $data['settings'] ?? [],
+            ];
 
-        $user['tenant_id'] = $tenant->id;
-        $user['email']     = $data['email'];
-        $user['phone']     = $data['phone'];
-        $user['password']  = Hash::make($data['password']);
+            $tenant = $this->tenantRepository->create($tenantData);
 
-        $this->userRepository->create($user);
+            $userData = [
+                'tenant_id' => $tenant->id,
+                'email'     => $data['email'],
+                'phone'     => $data['phone'],
+                'password'  => Hash::make($data['password']),
+            ];
 
-        return $tenant;
+            $user = $this->userRepository->create($userData);
+
+            event(new TenantRegistered($tenant, $user));
+
+            return $tenant;
+        });
     }
 }
