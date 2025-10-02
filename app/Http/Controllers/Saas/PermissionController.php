@@ -37,6 +37,4 @@ class PermissionController extends Controller
 
         return response()->success(new RoleResource($updated->load('permissions')), __('messages.updated', ['resource' => $this->name]));
     }
-
-
 }

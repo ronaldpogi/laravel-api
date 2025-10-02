@@ -42,7 +42,7 @@ class TenantService
         $count = $tenants->count();
 
         return [
-            'count' => $count,
+            'count'   => $count,
             'tenants' => $tenants,
         ];
     }
@@ -56,7 +56,7 @@ class TenantService
         $count = $members->count();
 
         return [
-            'count' => $count,
+            'count'   => $count,
             'members' => $members,
         ];
     }

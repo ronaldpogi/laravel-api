@@ -13,7 +13,7 @@ class PermissionService
     ) {}
 
     // Role <-> Permission
-    public function attachPermissionsToRole(int $roleId, array $permissionIds): Role | Collection
+    public function attachPermissionsToRole(int $roleId, array $permissionIds): Role|Collection
     {
         $role = $this->roleRepository->findOrFail($roleId);
         $this->roleRepository->attachPermissions($role, $permissionIds);
@@ -21,7 +21,7 @@ class PermissionService
         return $role->fresh(['permissions']);
     }
 
-    public function detachPermissionsFromRole(int $roleId, array $permissionIds): Role | Collection
+    public function detachPermissionsFromRole(int $roleId, array $permissionIds): Role|Collection
     {
         $role = $this->roleRepository->findOrFail($roleId);
         $this->roleRepository->detachPermissions($role, $permissionIds);
@@ -29,13 +29,11 @@ class PermissionService
         return $role->fresh(['permissions']);
     }
 
-    public function syncPermissionsForRole(int $roleId, array $permissionIds): Role | Collection
+    public function syncPermissionsForRole(int $roleId, array $permissionIds): Role|Collection
     {
         $role = $this->roleRepository->findOrFail($roleId);
         $this->roleRepository->syncPermissions($role, $permissionIds);
 
         return $role->fresh(['permissions']);
     }
-
-
 }

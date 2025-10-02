@@ -24,7 +24,13 @@ class BootstrapTenant
 
             // Seed Permissions from Routes
             foreach (\Route::getRoutes() as $route) {
-                if ($name = $route->getName()) {
+                if (
+                    ($name = $route->getName()) && ! str_starts_with($name, 'generated::') && // Ignore auto-generated names
+                    ! str_starts_with($name, 'sanctum.')   && // Ignore Laravel/Sanctum
+                    ! str_starts_with($name, 'ignition.')  && // Ignition (error pages)
+                    ! str_starts_with($name, 'telescope.') && // Telescope (if enabled)
+                    ! str_starts_with($name, 'livewire.')           // Livewire internal
+                ) {
                     $this->permissionRepository->firstOrCreate([
                         'name'      => $name,
                         'tenant_id' => $tenant->id,

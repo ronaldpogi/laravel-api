@@ -12,7 +12,7 @@ class RoleService
         protected UserRepository $userRepository,
     ) {}
 
-    public function attachRolesToUser(int $userId, array $roleIds): User | Collection
+    public function attachRolesToUser(int $userId, array $roleIds): User|Collection
     {
         $user = $this->userRepository->findOrFail($userId);
         $this->userRepository->attachRoles($user, $roleIds);
@@ -20,7 +20,7 @@ class RoleService
         return $user->fresh(['roles']);
     }
 
-    public function detachRolesFromUser(int $userId, array $roleIds): User | Collection
+    public function detachRolesFromUser(int $userId, array $roleIds): User|Collection
     {
         $user = $this->userRepository->findOrFail($userId);
         $this->userRepository->detachRoles($user, $roleIds);
@@ -28,7 +28,7 @@ class RoleService
         return $user->fresh(['roles']);
     }
 
-    public function syncRolesForUser(int $userId, array $roleIds): User | Collection
+    public function syncRolesForUser(int $userId, array $roleIds): User|Collection
     {
         $user = $this->userRepository->findOrFail($userId);
         $this->userRepository->syncRoles($user, $roleIds);

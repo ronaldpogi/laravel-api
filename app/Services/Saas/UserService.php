@@ -21,6 +21,8 @@ class UserService
 
         $user = $this->userRepo->create($data);
 
+        $user->roles()->sync((array) $data['role_ids']);
+
         return $user;
     }
 
