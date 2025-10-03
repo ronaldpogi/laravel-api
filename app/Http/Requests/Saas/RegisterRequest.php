@@ -28,7 +28,12 @@ class RegisterRequest extends FormRequest
 
         return [
             // FOR USER TABLE
-            'email'    => ['required', 'email', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('saas_users', 'email')->ignore($tenantId),
+            ],
             'phone'    => ['required', 'int'],
             'password' => [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:8', 'confirmed'],
 

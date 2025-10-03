@@ -73,6 +73,6 @@ abstract class TModel
 
     public function findWhere(array $conditions)
     {
-        return $this->model->where($conditions)->first();
+        return $this->model->where($conditions);
     }
 }
